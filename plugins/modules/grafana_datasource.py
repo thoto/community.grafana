@@ -461,6 +461,8 @@ import ansible_collections.community.grafana.plugins.module_utils.base as base
 def compare_datasources(new, current, compareSecureData=True):
     del current['typeLogoUrl']
     del current['id']
+    if current.get('type','') == 'influxdb':
+        current.pop('uid', '')
     if 'version' in current:
         del current['version']
     if 'readOnly' in current:
@@ -710,7 +712,6 @@ def main():
         mutually_exclusive=[['url_username', 'grafana_api_key'], ['tls_ca_cert', 'tls_skip_verify']],
         required_if=[
             ['ds_type', 'opentsdb', ['tsdb_version', 'tsdb_resolution']],
-            ['ds_type', 'influxdb', ['database']],
             ['ds_type', 'elasticsearch', ['database', 'es_version', 'time_field', 'interval']],
             ['ds_type', 'mysql', ['database']],
             ['ds_type', 'postgres', ['database', 'sslmode']],
