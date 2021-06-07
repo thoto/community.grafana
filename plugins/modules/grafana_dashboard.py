@@ -298,15 +298,18 @@ def grafana_create_dashboard(module, data):
     payload = {}
     if data.get('dashboard_id'):
         data['path'] = "https://grafana.com/api/dashboards/%s/revisions/%s/download" % (data['dashboard_id'], data['dashboard_revision'])
-    if data['path'].startswith('http'):
+    if data['path'] and data['path'].startswith('http'):
         r, info = fetch_url(module, data['path'])
         if info['status'] != 200:
             raise GrafanaAPIException('Unable to download grafana dashboard from url %s : %s' % (data['path'], info))
         payload = json.loads(r.read())
     else:
         try:
-            with open(data['path'], 'r') as json_file:
-                payload = json.load(json_file)
+            if data.get('json_data', ''):
+                payload = json.loads(data['json_data'])
+            else:
+                with open(data['path'], 'r') as json_file:
+                    payload = json.load(json_file)
         except Exception as e:
             raise GrafanaAPIException("Can't load json file %s" % to_native(e))
 
@@ -501,6 +504,7 @@ def main():
         uid=dict(type='str'),
         slug=dict(type='str'),
         path=dict(aliases=['dashboard_url'], type='str'),
+        json_data=dict(type='json'),
         dashboard_id=dict(type='str'),
         dashboard_revision=dict(type='str', default='1'),
         overwrite=dict(type='bool', default=False),
@@ -515,7 +519,7 @@ def main():
             ['state', 'export', ['path']],
         ],
         required_together=[['url_username', 'url_password', 'org_id']],
-        mutually_exclusive=[['url_username', 'grafana_api_key'], ['uid', 'slug'], ['path', 'dashboard_id']],
+        mutually_exclusive=[['url_username', 'grafana_api_key'], ['uid', 'slug'], ['path', 'dashboard_id', 'json_data']],
     )
 
     module.params["grafana_url"] = clean_url(module.params["grafana_url"])
